@@ -1,0 +1,13 @@
+Using the ttyConnector enables to connect and interact with an MSB-A2 using a tty device connection.
+It represents a base for future MSB-A2 interacting tools (and maybe other devices). 
+
+Right now it is not tested or documented well, so beware.
+(tested with gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3 )
+
+As it uses C++11 features, i.e. std::mutex and std::thread, it is mandatory to use the: 
+-std=c++0x and -lpthread for a successfull build.
+
+TODO
+- include Makefile
+- document all functions
+- test all functions
