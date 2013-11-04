@@ -2,4 +2,5 @@ Demos
 ======
 
 ndw - 5. Nacht des Wissens demo (03.11.2013)
-This is a simple demo demonstrates the communication with MSBA2 nodes using the msba2http server
+This simple demo demonstrates the communication with MSBA2 nodes using the msba2http server
+ - the msba2http server looks for ./html/index.html form its current directory
