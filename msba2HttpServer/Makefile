@@ -1,5 +1,6 @@
 TARGET = msba2Server
-LIBS = -lpthread -lboost_system -lboost_filesystem -L/usr/local/lib/ -lboost_regex
+LIBDIR = /usr/local/lib/
+LIBS =  -L$(LIBDIR) -lpthread -lboost_system -lboost_filesystem -lboost_regex
 CC = g++
 CPPFLAGS = -D__GXX_EXPERIMENTAL_CXX0X__ -g3 -Wall -O0 -std=c++0x
 
