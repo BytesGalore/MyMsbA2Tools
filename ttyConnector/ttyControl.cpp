@@ -15,7 +15,25 @@ long ttyControl::initialize(std::string strPort)
 	m_vLogTimes.clear();
 	m_nLogRead = 0;
 	m_ttyh.setPort(strPort);
-	return m_ttyh.openConnection();
+	int nRet = m_ttyh.openConnection();
+	m_bInitialized = !(nRet < 0);
+	return nRet;
+}
+
+void ttyControl::deInitialize( void )
+{
+	m_nLastLogSize = 0;
+	m_nLogRead = 0;
+	m_vLog.clear();
+	m_vLogTimes.clear();
+	m_nLogRead = 0;
+	m_ttyh.closeConnection();
+	m_bInitialized = false;
+}
+
+std::string ttyControl::getUsedPort( void )
+{
+	return m_ttyh.getPort();
 }
 
 void ttyControl::readLog(void) {
@@ -106,6 +124,16 @@ std::vector<std::string> ttyControl::getLogTimeList(size_t nFrom, size_t nTo)
 	return std::vector<std::string>();
 }
 
+std::vector<std::string> ttyControl::getLogTimeList(size_t nFrom)
+{
+	if(nFrom < m_vLogTimes.size())
+	{
+		return std::vector<std::string>(m_vLogTimes.begin()+nFrom, m_vLogTimes.end());
+	}
+
+	return std::vector<std::string>();
+}
+
 std::vector<std::string> ttyControl::getLogList(size_t nFrom, size_t nTo) {
 	if(nFrom < m_vLog.size() && nTo < m_vLog.size() && nFrom <= nTo)
 	{
@@ -130,4 +158,9 @@ std::vector<std::string> ttyControl::getLogList(void) {
 
 void ttyControl::sendToDevice(std::string strSend) {
 	m_ttyh.writeToTTY(strSend);
+}
+
+bool ttyControl::IsInitialized()
+{
+	return m_bInitialized;
 }

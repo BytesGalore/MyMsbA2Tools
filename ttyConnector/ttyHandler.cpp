@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <ctime>
+#include <iomanip>
 #include "ttyHandler.hpp"
 
 
@@ -16,7 +17,7 @@ ttyHandler::ttyHandler() {
 	m_nTTYfd = 0;
 	m_bSigHandlerStopped = false;
 	m_bResetWhenConnect = true;
-	m_strPort = "/dev/ttyUSB0";
+	m_strPort = "";
 	m_bReadSerialPort = true;
 	m_pReadThread = NULL;
 }
@@ -32,7 +33,7 @@ void ttyHandler::closeConnection() {
 	m_nTTYfd = 0;
 	m_bSigHandlerStopped = false;
 	m_bResetWhenConnect = true;
-	m_strPort = "/dev/ttyUSB0";
+	m_strPort = "";
 	m_bReadSerialPort = true;
 	m_pReadThread = NULL;
 }
@@ -40,7 +41,7 @@ void ttyHandler::closeConnection() {
 int ttyHandler::openConnection() {
 	install_sighandler();
 	m_mtxSerialPort.lock();
-    int result = open_serial_port(m_strPort.c_str());
+    int result = m_sh.open_serial_port(m_strPort.c_str());
     m_mtxSerialPort.unlock();
 
     if(result < 0)
@@ -75,7 +76,7 @@ void ttyHandler::sig_handler(int signal) {
 	        	m_bSigHandlerStopped = true;
 	            std::cout << "\nSignal received, closing port.\n";
 	            setBReadSerialPort(false);
-	            close_serial_port();
+	            m_sh.close_serial_port();
 	        }
 	    } else if (signal == SIGINT) {
 	        std::cout << "SIGINT received, exiting...\n";
@@ -145,7 +146,7 @@ void ttyHandler::install_sighandler() {
 
 void ttyHandler::closeAll() {
     close_tty();
-    close_serial_port();
+    m_sh.close_serial_port();
 }
 
 int ttyHandler::writeToTTY(std::string strWrite) {
@@ -154,7 +155,7 @@ int ttyHandler::writeToTTY(std::string strWrite) {
 	{
 		vBuf.push_back('\n');
 	}
-	int nRet = write_serial_port((void*)&vBuf[0], vBuf.size());
+	int nRet = m_sh.write_serial_port((void*)&vBuf[0], vBuf.size());
 	return nRet;
 }
 
@@ -204,7 +205,7 @@ std::string ttyHandler::getTime()
 	  {
 		  strRet = strRet.substr(0, found) + ".";
 		  std::stringstream ss;
-		  ss << "" << fractional_seconds << " ";
+		  ss << std::setfill('0') << std::setw(3) << fractional_seconds << " ";
 		  strRet += ss.str();
 	  }
 	  return strRet;
@@ -232,11 +233,11 @@ void ttyHandler::hardResetToUserCode(void) {
 	if(m_bResetWhenConnect)
 	{
 		m_mtxSerialPort.lock();
-		set_rts(0);		// RTS (ttl level) connects to P0.14
-		set_dtr(1);		// DTR (ttl level) connects to RST
-		send_break_signal();	// or break detect circuit to RST
+		m_sh.set_rts(0);		// RTS (ttl level) connects to P0.14
+		m_sh.set_dtr(1);		// DTR (ttl level) connects to RST
+		m_sh.send_break_signal();	// or break detect circuit to RST
 		usleep(75000);
-		set_dtr(0);		// allow the CPU to run
+		m_sh.set_dtr(0);		// allow the CPU to run
 		usleep(40000);
 		m_mtxSerialPort.unlock();
 	}
@@ -267,7 +268,7 @@ int ttyHandler::readFromTTY(unsigned char* pBuf, size_t nSize)
 {
 	// read is set as blocking, so no mutex is necessary here
 	//m_mtxSerialPort.lock();
-	int nRet = read_serial_port(pBuf, nSize);
+	int nRet = m_sh.read_serial_port(pBuf, nSize);
 	//m_mtxSerialPort.unlock();
 	return nRet;
 }

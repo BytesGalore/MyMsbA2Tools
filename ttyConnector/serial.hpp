@@ -1,13 +1,6 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-/*
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-*/
-
 #include <string>
 
 class serial_handler {
@@ -27,17 +20,12 @@ public:
 	void change_baud(const char *baud_name);
 
 private:
-	/*static*/ int port_fd;
+	int port_fd;
 	tcflag_t baud_name_to_flags(const char *baud_name);
 	void report_open_error(const char *filename, int err);
 	std::string baud_rate;
-	//char baud_rate[];
+
 };
 
-/*
-#ifdef __cplusplus
-}
-#endif
-*/
 #endif // SERIAL_H
 

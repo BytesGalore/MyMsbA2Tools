@@ -19,7 +19,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
-#include "serial.h"
+#include "serial.hpp"
 
 
 class ttyHandler {
@@ -82,6 +82,8 @@ private:
 	void readPort( ttyHandler* pOwner );
 	bool isBReadSerialPort();
 	void setBReadSerialPort(bool bReadSerialPort);
+
+	serial_handler m_sh;
 
 };
 
