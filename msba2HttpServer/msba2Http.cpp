@@ -1,10 +1,6 @@
 #include <boost/network/protocol/http/server.hpp>
-#include <boost/network/protocol/http/client.hpp>
-#include "ttyConnection/ttyControl.hpp"
-#include "ToolBox.hpp"
 #include "pageHandler.hpp"
 #include <string>
-#include <vector>
 
 
 using namespace boost::network;

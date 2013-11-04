@@ -13,7 +13,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/regex.hpp>
-#include "ttyConnection/ttyControl.hpp"
+#include "../ttyConnector/ttyControl.hpp"
 #include "ToolBox.hpp"
 
 class pageHandler {
