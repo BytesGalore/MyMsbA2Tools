@@ -1,4 +1,4 @@
-TARGET = msba2Server
+TARGET = msba2HttpServer
 LIBDIR = /usr/local/lib/
 LIBS =  -L$(LIBDIR) -lpthread -lboost_system -lboost_filesystem -lboost_regex
 CC = g++
