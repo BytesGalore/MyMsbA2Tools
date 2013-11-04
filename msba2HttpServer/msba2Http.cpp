@@ -74,7 +74,7 @@ int main(int argc, char * argv[]) {using namespace boost::network;
         std::cerr << "Usage: " << argv[0] << " address port" << std::endl;
         return 1;
     }
-    ph.init();
+
     startHttpServer(std::string(argv[1]), std::string(argv[2]));
 
     return 0;
