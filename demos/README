@@ -4,3 +4,6 @@ Demos
 ndw - 5. Nacht des Wissens demo (03.11.2013)
 This simple demo demonstrates the communication with MSBA2 nodes using the msba2http server
  - the msba2http server looks for ./html/index.html form its current directory
+
+RPLgraph -
+This demo is based on the ndw demo and extends the view with a graph that visualize the RPL topology.
