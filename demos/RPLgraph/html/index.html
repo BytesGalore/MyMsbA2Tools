@@ -46,7 +46,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand">RPL Graph test</a>
+          <a class="navbar-brand">RPL Demo - Graph test</a>
         </div>
 
       </div>
@@ -61,6 +61,7 @@
   </button> <button type="button" class="btn btn-default btn-xs" onclick="requestTTY('?RefreshTTYPorts')">refresh</button>
   <ul class="dropdown-menu" role="menu" id="IDttySelection">
   </ul>
+<input type="checkbox" name="ToggleAutoscroll" value="on" checked="checked" style="margin-left: 23em" id="IDautoscrollToggle" onclick="toggleAutoscroll()"> Autoscroll
 </div>
 
 
@@ -134,6 +135,14 @@
 
 
     var colors= new Array("LightGray", "LightSeaGreen", "Orange", "GreenYellow", "LightSalmon");
+
+function toggleAutoscroll()
+{
+    var toggle = document.getElementById("IDautoscrollToggle");
+    toggle.setAttribute("value", (toggle.getAttribute("value")=="on"?"off":"on") );
+    //value = (value=='on'?'off':'on');
+}
+
 
     function getColorForNode( port )
     {
@@ -562,9 +571,14 @@
                         txt = txt+createLineTag(x[i]);
                          appendNodeInfo(x[i]);  
                       }
-                    document.getElementById("IDconsoleOut").innerHTML +=txt;
+                    var consOut = document.getElementById("IDconsoleOut");
+                    consOut.innerHTML +=txt;
                     // autoscroll to bottom
-                    document.getElementById("IDconsoleOut").scrollTop = document.getElementById("IDconsoleOut").scrollHeight;
+                    var val = document.getElementById("IDautoscrollToggle").getAttribute("value")
+                    if( val == "on")
+                    {
+                        consOut.scrollTop = consOut.scrollHeight;
+                    }
                     x=xmlDoc.getElementsByTagName("NODE");
                     handleConnectionButtons(x);                           
                 }
