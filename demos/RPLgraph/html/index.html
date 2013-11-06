@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>NdW - HAW Hamburg</title>
+    <!-- Bootstrap core CSS -->
+
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <style type="text/css">
+        body {
+            padding-top: 50px;
+        }
+        .node {
+          stroke: #fff;
+          stroke-width: 1.5px;
+        }
+
+        .link {
+          stroke: #999;
+          stroke-opacity: .6;
+        }
+    </style>
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/html5shiv.js"></script>
+      <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/respond.min.js"></script>
+    <![endif]-->
+
+
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand">RPL Graph test</a>
+        </div>
+
+      </div>
+    </div>
+    <div class="container">
+
+<br />
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default btn-xs dropdown-toggle" style="width: 14em; text-align: center;" data-toggle="dropdown">
+    Connect to Device <span class="caret"></span>
+  </button> <button type="button" class="btn btn-default btn-xs" onclick="requestTTY('?RefreshTTYPorts')">refresh</button>
+  <ul class="dropdown-menu" role="menu" id="IDttySelection">
+  </ul>
+</div>
+
+
+
+<br />
+
+<div id="IDmainView">
+
+<div class="panel panel-primary" style="float: left; width: 45em; height: 37em; " >
+  <div class="panel-heading">
+    <h3 class="panel-title">Mixed console</h3>
+  </div>
+  <div id="IDconsoleOut" class="panel-body" style="width: 44.8em; height: 30em; overflow: auto;">
+  </div>
+ <div class="panel-footer">
+    <div class="input-group">
+      <input type="text" class="form-control" value="" id="IDcommandForm">
+      <span class="input-group-btn">
+        <div class="btn-group dropup">
+          <button type="button" class="btn btn-primary" onclick="sendCommand()">send to</button>
+          <button style="background-color:black" activenode="none" id="IDnodeSendChoice" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+          <ul class="dropdown-menu pull-right" role="menu" id="IDsendToNode">
+
+          </ul>
+        </div><!-- /btn-group -->
+
+      </span>
+    </div><!-- /input-group -->
+ </div>
+<div class="panel panel-default" style="float: left; width: 45em; height: 37em; margin-top: 1em; ">
+  <div class="panel-heading">
+    <h3 class="panel-title">RPL Graph</h3>
+  </div>
+  <div id="IDgraph" class="panel-body" style="width: 44.8em; height: 30em; overflow: auto;">  
+  </div>
+</div>
+
+</div><!-- panel primary -->
+
+
+
+    <div id="IDnodeInfo">
+    </div>
+<br>
+
+
+    </div><!-- /.container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+    <script>
+    // refresh every 700ms
+    var refreshOutput=setInterval(function(){loadXMLLog()},700);
+
+    var RPLnodes = [{
+            name:"",
+            group:1
+        }];
+
+    var RPLnodesLinks =[{
+            source:0,
+            target:0,
+            value:0
+    }];
+
+
+    var colors= new Array("LightGray", "LightSeaGreen", "Orange", "GreenYellow", "LightSalmon");
+
+    function getColorForNode( port )
+    {
+        if(port == "/dev/ttyUSB0")
+            return colors[0];
+        if(port == "/dev/ttyUSB1")
+            return colors[1];
+        if(port == "/dev/ttyUSB2")
+            return colors[2];
+        if(port == "/dev/ttyUSB3")
+            return colors[3];
+        if(port == "/dev/ttyUSB4")
+            return colors[4];
+
+        return "White";
+    }
+
+    function appendNodeInfo( logline )
+    {
+        var childs = logline.childNodes;
+        var node="";
+        var content="";
+        var j;
+        for(j=0;j<childs.length;j++)
+        {
+            if(childs[j].nodeName.toUpperCase()== "DEVICE")
+            {
+              node=childs[j].textContent;
+            }            
+            if(childs[j].nodeName.toUpperCase()== "VALUE")
+            {
+              content=childs[j].textContent;
+            }
+            
+        }
+        var nodeInfo = document.getElementById("IDnodeInfo"+node+"Content");
+        
+        if(content.indexOf("send ") != -1)
+        {
+            var mysearch = /send (\w*)(.*)/;
+            var result = mysearch.exec(content);
+            
+            if(result != null)
+            {
+                var type = result[1];
+                mysearch = /to \w*:\w*:\w*:\w*:\w*:\w*:\w*:(\w*)/;
+                result = mysearch.exec(content);
+                
+                if(result != null)
+                {
+                    var dst=result[1];
+                    dst=dst.replace(/0/g, "");
+
+                    var snd = document.getElementById("IDnodeInfo"+node+"sendInfo");
+                    if( snd == null )
+                    {
+                        var newEl = document.createElement("div");
+                        newEl.setAttribute("id", "IDnodeInfo"+node+"sendInfo");
+                        newEl.textContent = "Send: " +type+ " to node ID: " +dst;
+                        nodeInfo.appendChild(newEl);
+                    }else
+                    {
+                        snd.textContent = "Send: " +type+ " to node ID: " +dst;
+                    } 
+                }          
+            }           
+        }
+
+        if(content.indexOf("received ") != -1)
+        {
+            var mysearch = /received (\w*)(.*)/;
+            var result = mysearch.exec(content);
+            var type = result[1];
+
+            mysearch = /from \w*:\w*:\w*:\w*:\w*:\w*:\w*:(\w*)/;
+            result = mysearch.exec(content);
+            var src=result[1];
+            src=src.replace(/0/g, "");
+
+            var rcv = document.getElementById("IDnodeInfo"+node+"receiveInfo");
+            if( rcv == null )
+            {
+                var newEl = document.createElement("div");
+                newEl.setAttribute("id", "IDnodeInfo"+node+"receiveInfo");
+                newEl.textContent = "Received: " +type+ " from node ID: " +src;
+                nodeInfo.appendChild(newEl);
+            }else
+            {
+                rcv.textContent = "Received: " +type+ " from node ID: " +src;
+            }           
+        }
+
+
+        if(content.indexOf("TRICKLE interval ") != -1)
+        {
+            var mysearch = /interval to (\w*.*)/;
+            var result = mysearch.exec(content);
+            var trickle = result[1];
+            
+            var trk = document.getElementById("IDnodeInfo"+node+"trickleInfo");
+            if( trk == null )
+            {
+                var newEl = document.createElement("div");
+                newEl.setAttribute("id", "IDnodeInfo"+node+"trickleInfo");
+                newEl.textContent = "Trickle: " +trickle;
+                nodeInfo.appendChild(newEl);
+            }else
+            {
+                trk.textContent = "Trickle: " +trickle;
+            }           
+        }
+
+        if(content.indexOf("pdate parent ") != -1)
+        {
+            var mysearch = /\Wrank (\w*)\W/;
+            var result = mysearch.exec(content);
+            var parentRank = result[1];
+                mysearch = /\W\W \w*:\w*:\w*:\w*:\w*:\w*:\w*:(\w*)/;           
+                result = mysearch.exec(content);
+            var parentAddr = result[1];
+            parentAddr=parentAddr.replace(/0/g, "");
+
+            if(parentAddr == "")
+            {
+                parentAddr = "0";
+            }
+            var prt = document.getElementById("IDnodeInfo"+node+"parentInfo");
+            if( prt == null )
+            {
+                var newEl = document.createElement("div");
+                newEl.setAttribute("id", "IDnodeInfo"+node+"parentInfo");
+                newEl.textContent = "Parent ID: " +parentAddr;
+                nodeInfo.appendChild(newEl);
+            }else
+            {
+                prt.textContent = "Parent ID: " +parentAddr;
+            }
+
+            var newNode = {name:name, group:1};
+            var newLink = {source:0, target:0, value: 0};
+            
+            var i = 0;
+            var n = -1, p = -1;
+            var NodeName = "";
+            var tmpName = "";
+            NodeName = nodeInfo.parentNode.getAttribute("nodeID");
+            for(i = 0; i < RPLnodes.length; i++)
+            {
+                tmpName = RPLnodes[i].name;
+                if(tmpName == parentAddr)
+                {
+                    p = i;
+                }
+                if(tmpName == NodeName)
+                {
+                    n = i;
+                }
+            }
+            
+            if(n != -1 && p != -1)
+            {
+                    RPLnodesLinks[n] = {source:n, target:p, value:1 };
+                    d3.selectAll(".node").remove();
+                    d3.selectAll(".link").remove();
+                    displayGraph();
+            }         
+        }
+
+        if(content.indexOf("INFO: Initialize as ") != -1)
+        {
+            var mysearch = /Initialize as (\w*) on address (\w*)/;
+            var result = mysearch.exec(content);
+            var whatAmI = result[1];
+            var myAdress = result[2];
+
+
+            whatAmI = (whatAmI=="root"?"root":"node");
+            var nodeInfoTitle = document.getElementById("IDnodeInfo"+node+"ContentTitle");
+            
+            if(nodeInfoTitle != null)
+            {
+                nodeInfoTitle.textContent = "Sensornode: started as " +whatAmI+ " with ID: " + myAdress;
+                nodeInfo.parentNode.setAttribute("nodeID", myAdress);
+            }
+
+
+
+            /* New Node appears */
+            var newNode = {name:myAdress, group:1};
+            var newLink = {source:0, target:0, value: 0};
+            if(RPLnodes.length == 1 && RPLnodes[0].name == "")
+            {
+                RPLnodes[0] = newNode;
+                RPLnodesLinks[0] = newLink;
+            }else
+            {
+                RPLnodes.push(newNode);
+                RPLnodesLinks.push(newLink);
+            }      
+
+            d3.selectAll(".node").remove();
+            d3.selectAll(".link").remove();
+            displayGraph();
+        }
+        
+        
+        if(content.indexOf("send TVO to ") != -1)
+        {
+            var mysearch = /to \w*:\w*:\w*:\w*:\w*:\w*:\w*:(\w*)/;
+            var result = mysearch.exec(content);
+           
+            var parentAddr = result[1];
+            parentAddr=parentAddr.replace(/0/g, "");
+
+
+
+            var prt = document.getElementById("IDnodeInfo"+node+"parentValidation");
+            if( prt == null )
+            {
+                var newEl = document.createElement("div");
+                newEl.setAttribute("id", "IDnodeInfo"+node+"parentValidation");
+                newEl.setAttribute("style", "font-weight:bold; color:orange;");
+                newEl.textContent = "TRAIL Pathvalidation: for ID: " +parentAddr + " started.";
+                nodeInfo.appendChild(newEl);
+            }else
+            {
+                prt.setAttribute("style", "font-weight:bold; color:orange;");
+                prt.textContent = "TRAIL Pathvalidation: for ID: " +parentAddr + " started.";
+            }           
+        }
+
+        if(content.indexOf("Included rank") != -1 && content.indexOf(") into TVO") != -1 )
+        {
+            var mysearch = /\Wrank (\w*)\W/;
+            var result = mysearch.exec(content);
+            var myRank = result[1];
+                
+
+            var prt = document.getElementById("IDnodeInfo"+node+"parentValidation");
+            if( prt == null )
+            {
+                var newEl = document.createElement("div");
+                newEl.setAttribute("id", "IDnodeInfo"+node+"parentValidation");
+                newEl.setAttribute("style", "font-weight:bold; color:blue;");
+                newEl.textContent = "Add my rank (" +myRank + ") to TVO for validation.";
+                nodeInfo.appendChild(newEl);
+            }else
+            {
+                prt.textContent = "Add my rank (" +myRank + ") to TVO for validation."
+            }           
+        }
+
+        if(content.indexOf("*TVO origin* checking signature ...") != -1)
+        {
+            var validating = content.substr(content.indexOf("**"));
+            validating = (validating=="**valid**\n"?"valid.":"NOT valid!");            
+            
+            var prt = document.getElementById("IDnodeInfo"+node+"parentValidation");
+            if( prt == null )
+            {
+                var newEl = document.createElement("div");
+                newEl.setAttribute("id", "IDnodeInfo"+node+"parentValidation");
+                if(validating=="valid.")
+                {
+                    newEl.setAttribute("style", "font-weight:bold; color:green;");
+                }else
+                {
+                    newEl.setAttribute("style", "font-weight:bold; color:red;");
+                }              
+                newEl.textContent = "Path is: " +validating;
+                nodeInfo.appendChild(newEl);
+            }else
+            {
+                if(validating=="valid.")
+                {
+                    prt.setAttribute("style", "font-weight:bold; color:green;");
+                }else
+                {
+                    prt.setAttribute("style", "font-weight:bold; color:red;");
+                }       
+                prt.textContent = "Path is: " +validating;
+            }           
+        }
+
+
+
+    }
+
+    function createLineTag( logline )
+    {
+        var txt,i,j, colortag;
+        var childs = logline.childNodes;
+        colortag="";
+        txt="";
+        for(j=0;j<childs.length;j++)
+        {
+            if(childs[j].nodeName.toUpperCase()== "DEVICE")
+            {
+              colortag="<div style=\"background-color:"+getColorForNode(childs[j].textContent)+"\">";
+            }            
+            if(childs[j].nodeName.toUpperCase()== "VALUE")
+            {
+                txt=txt+ childs[j].textContent +"<br>";
+            }
+            
+        }
+        txt=colortag+txt+"</div>";
+        return txt;
+    }
+
+    function changeSend( changePort )
+    {
+        document.getElementById("IDnodeSendChoice").setAttribute("style", "background-color:"+getColorForNode(changePort));
+        document.getElementById("IDnodeSendChoice").setAttribute("activenode", changePort);
+    }
+
+    function handleConnectionButtons( node )
+    {
+        var j,k;
+        var txt = "";
+        for(j=0;j<node.length;j++)
+        {
+            var childs = node[j].childNodes;
+            var name = "";
+            var status = "";
+            for(k=0;k<childs.length;k++)
+            {
+                if(childs[k].nodeName.toUpperCase() == "PORT")
+                {
+                    name = childs[k].textContent;
+                }
+
+                if(childs[k].nodeName.toUpperCase() == "INITIALIZED")
+                {
+                    status = childs[k].textContent;
+                }
+
+                if( status.toLowerCase() == "true" )
+                {
+                    
+                   
+                   if(document.getElementById("IDchooseNode"+name) == null)
+                   {
+                   txt = "<li style=\"text-align: center; background-color:"+ getColorForNode(name)+";\"> <button class=\"btn btn-default btn-xs\" onclick=\"changeSend(\'"+name+"\')\" id=\"IDchooseNode"+name+"\" style=\"text-align: center; background-color:"+ getColorForNode(name)+";\">"+name+"</button></li>"
+                    document.getElementById("IDsendToNode").innerHTML += txt;
+
+                   
+                    if(document.getElementById("IDnodeInfo"+name) == null)
+                    {
+                    var newEl = document.createElement("div");
+                        newEl.setAttribute("class","panel panel-default");
+                        newEl.setAttribute("style","float: left; width: 35em; height: 15em; margin-left: 1em; margin-bottom: 1em;");
+                        newEl.setAttribute("id", "IDnodeInfo"+name);
+                        newEl.setAttribute("nodeId", "");
+                        newEl.innerHTML = "<div class=\"panel-heading\" style=\"background-color:"+getColorForNode(name)+"\"><h3 class=\"panel-title\"; id=\"IDnodeInfo"+name+"ContentTitle\";>Sensornode: "+name+" </h3></div><div class=\"panel-footer\" id=\"IDnodeInfo"+name+"Content\" style=\"width: 34.8em; height: 12em; overflow: auto;\"></div>"
+                    document.getElementById("IDnodeInfo").appendChild(newEl);
+                    }
+                    
+                   }
+
+                }
+                
+            }
+
+        }
+    }
+
+    function handleTTYPorts( ttylist )
+    {
+        var childs = ttylist[0].childNodes;
+        var x=document.getElementById("IDttySelection");
+        for(k=0;k<childs.length;k++)
+        {
+            if(childs[k].nodeName.toUpperCase() == "TTY")
+            {
+                name = childs[k].textContent.replace(/^\s+|\s+$/g,'');
+                if(document.getElementById("IDselectedPort"+name) == null)
+                {
+                    var newEl = document.createElement("li");
+                    newEl.setAttribute("style","text-align: center");
+                    newEl.innerHTML = "<a href=\"#\" id=\"IDselectedPort"+name+"\" onclick=\"openTTY(\'"+name+"\')\";>"+name+"</a>";
+                    x.appendChild(newEl);
+                }
+                               
+                if( document.getElementById("IDchooseNode"+name) != null)
+                {
+                    var n=document.getElementById("IDselectedPort"+name);
+                    if(n != null)
+                    {
+                        var p = n.parentNode;
+                        p.parentNode.removeChild(p);
+
+                    }    
+                }
+            }
+        }
+    }
+
+
+    function loadXMLLog()
+    {
+    var xmlhttp;
+    var txt,x,i, req;
+        if (window.XMLHttpRequest)
+        {// code for IE7+, Firefox, Chrome, Opera, Safari
+           xmlhttp=new XMLHttpRequest();
+        }
+        else
+        {// code for IE6, IE5
+           xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+      
+    xmlhttp.onreadystatechange=function()
+      {
+      if (xmlhttp.readyState==4 && xmlhttp.status==200)
+        {
+            xmlDoc=xmlhttp.responseXML;
+            if(xmlDoc != null)
+            {
+                txt="";
+                x=xmlDoc.getElementsByTagName("LOGLINE");
+                if( x != null)
+                {
+                    for (i=0;i<x.length;i++)
+                      {
+                        txt = txt+createLineTag(x[i]);
+                         appendNodeInfo(x[i]);  
+                      }
+                    document.getElementById("IDconsoleOut").innerHTML +=txt;
+                    // autoscroll to bottom
+                    document.getElementById("IDconsoleOut").scrollTop = document.getElementById("IDconsoleOut").scrollHeight;
+                    x=xmlDoc.getElementsByTagName("NODE");
+                    handleConnectionButtons(x);                           
+                }
+                x=xmlDoc.getElementsByTagName("AVAILABLETTYS");
+                if( x != null)
+                {
+                    handleTTYPorts(x);
+                }
+            }
+        }
+      }
+
+    req = "append_log.xml";
+    xmlhttp.open("GET",req,true);
+    xmlhttp.send();
+    }
+
+    function requestTTY(request)
+    {
+        var xmlhttp;
+        if (window.XMLHttpRequest)
+          {// code for IE7+, Firefox, Chrome, Opera, Safari
+          xmlhttp=new XMLHttpRequest();
+          }
+        else
+          {// code for IE6, IE5
+          xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+          }
+        xmlhttp.open("GET",request,true);
+        xmlhttp.send();
+    }
+
+    function sendCommand()
+    {
+        var IDcommandForm;
+        IDcommandForm = "?Command=" + document.getElementById('IDcommandForm').value + "?toNode=" +document.getElementById("IDnodeSendChoice").getAttribute("activenode");
+        requestTTY(IDcommandForm);
+        document.getElementById('IDcommandForm').value = "";
+    }
+
+    function openTTY( port )
+    {
+        requestTTY("?ConnectTTY=" + port);
+    }
+
+    </script>
+<script>
+
+var width = 600,
+    height = 300;
+
+var color = d3.scale.category20();
+
+var force = d3.layout.force()
+    .charge(-120)
+    .linkDistance(40)
+    .size([width, height]);
+
+var svg = d3.select("#IDgraph").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+function displayGraph() {
+    
+  force
+      .nodes(RPLnodes)
+      .links(RPLnodesLinks)
+      .start();
+
+  var link = svg.selectAll(".link")
+      .data(RPLnodesLinks)
+    .enter().append("line")
+      .attr("class", "link")
+      .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+  var node = svg.selectAll(".node")
+      .data(RPLnodes)
+    .enter().append("circle")
+      .attr("class", "node")
+      .attr("r", 10)
+      .style("fill", function(d) { return color(d.group); })
+      .call(force.drag);
+
+  node.append("title")
+      .text(function(d) { return d.name; });
+
+  force.on("tick", function() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+  });
+}
+
+</script>
+
+
+  </body>
+</html>
