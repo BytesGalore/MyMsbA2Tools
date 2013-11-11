@@ -59,9 +59,10 @@
   <button type="button" class="btn btn-default btn-xs dropdown-toggle" style="width: 14em; text-align: center;" data-toggle="dropdown">
     Connect to Device <span class="caret"></span>
   </button> <button type="button" class="btn btn-default btn-xs" onclick="requestTTY('?RefreshTTYPorts')">refresh</button>
+            <button type="button" class="btn btn-default btn-xs" onclick="openAllTTY()">connect all</button>
   <ul class="dropdown-menu" role="menu" id="IDttySelection">
   </ul>
-<input type="checkbox" name="ToggleAutoscroll" value="on" checked="checked" style="margin-left: 23em" id="IDautoscrollToggle" onclick="toggleAutoscroll()"> Autoscroll
+<input type="checkbox" name="ToggleAutoscroll" value="on" checked="checked" style="margin-left: 18em" id="IDautoscrollToggle" onclick="toggleAutoscroll()"> Autoscroll
 </div>
 
 
@@ -70,7 +71,8 @@
 
 <div id="IDmainView">
 
-<div class="panel panel-primary" style="float: left; width: 45em; height: 37em; " >
+<div style="float: left">
+<div class="panel panel-primary" style="width: 45em; height: 37em; " >
   <div class="panel-heading">
     <h3 class="panel-title">Mixed console</h3>
   </div>
@@ -91,13 +93,15 @@
       </span>
     </div><!-- /input-group -->
  </div>
-<div class="panel panel-default" style="float: left; width: 45em; height: 37em; margin-top: 1em; ">
+<div class="panel panel-default" style="width: 45em; height: 37em; margin-top: 1em; ">
   <div class="panel-heading">
     <h3 class="panel-title">RPL Graph</h3>
   </div>
-  <div id="IDgraph" class="panel-body" style="width: 44.8em; height: 30em; overflow: auto;">  
+  <div id="IDgraph" class="panel-body" style="float: left; width: 44.8em; height: 30em; overflow: auto;">  
   </div>
 </div>
+</div>
+
 
 </div><!-- panel primary -->
 
@@ -494,7 +498,7 @@ function toggleAutoscroll()
                     {
                     var newEl = document.createElement("div");
                         newEl.setAttribute("class","panel panel-default");
-                        newEl.setAttribute("style","float: left; width: 35em; height: 15em; margin-left: 1em; margin-bottom: 1em;");
+                        newEl.setAttribute("style","float: left; width: 35em; height: 16em; margin-left: 1em; margin-bottom: 1em;");
                         newEl.setAttribute("id", "IDnodeInfo"+name);
                         newEl.setAttribute("nodeId", "");
                         newEl.innerHTML = "<div class=\"panel-heading\" style=\"background-color:"+getColorForNode(name)+"\"><h3 class=\"panel-title\"; id=\"IDnodeInfo"+name+"ContentTitle\";>Sensornode: "+name+" </h3></div><div class=\"panel-footer\" id=\"IDnodeInfo"+name+"Content\" style=\"width: 34.8em; height: 12em; overflow: auto;\"></div>"
@@ -523,7 +527,7 @@ function toggleAutoscroll()
                 {
                     var newEl = document.createElement("li");
                     newEl.setAttribute("style","text-align: center");
-                    newEl.innerHTML = "<a href=\"#\" id=\"IDselectedPort"+name+"\" onclick=\"openTTY(\'"+name+"\')\";>"+name+"</a>";
+                    newEl.innerHTML = "<a href=\"#\" name=\"NAMEselectedPort\" id=\"IDselectedPort"+name+"\" onclick=\"openTTY(\'"+name+"\')\";>"+name+"</a>";
                     x.appendChild(newEl);
                 }
                                
@@ -617,6 +621,19 @@ function toggleAutoscroll()
         IDcommandForm = "?Command=" + document.getElementById('IDcommandForm').value + "?toNode=" +document.getElementById("IDnodeSendChoice").getAttribute("activenode");
         requestTTY(IDcommandForm);
         document.getElementById('IDcommandForm').value = "";
+    }
+
+
+    function openAllTTY()
+    {
+        var x=document.getElementsByName("NAMEselectedPort");
+        if(x != null)
+        {
+            for(k=0;k<x.length;k++)
+            {       
+              openTTY(x[k].textContent);
+            }
+        }
     }
 
     function openTTY( port )
