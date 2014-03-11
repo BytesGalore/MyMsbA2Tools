@@ -81,6 +81,7 @@ private:
 
 	void readPort( ttyHandler* pOwner );
 	bool isBReadSerialPort();
+	void releaseReaderLock();
 	void setBReadSerialPort(bool bReadSerialPort);
 
 	serial_handler m_sh;

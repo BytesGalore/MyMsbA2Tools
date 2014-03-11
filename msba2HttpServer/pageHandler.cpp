@@ -146,6 +146,7 @@ std::string pageHandler::createLogXML( void )
 	strRetXML += strNodeStates;
 	strRetXML += m_strTTYs;
 	strRetXML += "</GENERATED>\n";
+	//std::cout << strRetXML << std::endl;
 	return strRetXML;
 
 }

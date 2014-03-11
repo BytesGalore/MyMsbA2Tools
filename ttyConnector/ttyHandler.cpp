@@ -249,12 +249,15 @@ void ttyHandler::resetLog(void) {
 	m_mtxLogVector.unlock();
 }
 
-
+void ttyHandler::releaseReaderLock()
+{
+	m_mtxReaderThread.unlock();
+}
 
 bool ttyHandler::isBReadSerialPort() {
 	m_mtxReaderThread.lock();
 	bool bRead = m_bReadSerialPort;
-	m_mtxReaderThread.unlock();
+	//m_mtxReaderThread.unlock();
 	return bRead;
 }
 
@@ -282,5 +285,6 @@ void ttyHandler::readPort( ttyHandler* pOwner ) {
         	std::string str( buf, buf + n/sizeof(buf[0]));
         	pOwner->appendToLog(str);
         }
+        pOwner->releaseReaderLock();
     }
 }

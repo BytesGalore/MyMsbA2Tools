@@ -9,6 +9,7 @@
 #define TTYCONTROL_HPP_
 #include <vector>
 #include <string>
+#include <mutex>
 #include "ttyHandler.hpp"
 
 class ttyControl {
@@ -134,6 +135,9 @@ private:
 	 *  Used to print only newly added lines. (for debug)
 	 */
 	size_t m_nLastLogSize;
+
+
+	std::mutex m_mtxLogVector;
 
 };
 

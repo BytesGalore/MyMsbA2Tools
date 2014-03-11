@@ -6,6 +6,7 @@
  */
 #include <iostream>
 #include "ttyControl.hpp"
+#include <boost/regex.hpp>
 
 long ttyControl::initialize(std::string strPort)
 {
@@ -37,6 +38,7 @@ std::string ttyControl::getUsedPort( void )
 }
 
 void ttyControl::readLog(void) {
+	m_mtxLogVector.lock();
 	std::vector<std::string> vLogRcv;
 	std::vector<std::string> vLogTimesRcv;
 
@@ -58,24 +60,28 @@ void ttyControl::readLog(void) {
 		for(std::vector<std::string>::iterator it = vLogRcv.begin(); it != vLogRcv.end(); ++it)
 		{
 			strTemp += (*it);
-
 			if(strTemp.find('\n') != std::string::npos)
 			{
-				std::string strAdd = strTemp.substr(0, strTemp.find('\n')+1);
-				m_vLog.push_back(strAdd);
-				strTemp = strTemp.substr(strTemp.find('\n')+1);
-				m_vLogTimes.push_back(vLogTimesRcv.at(nIter));
-
+				while( (strTemp.find('\n') != std::string::npos ) )
+				{
+					std::string strAdd = strTemp.substr(0, strTemp.find('\n')+1);
+					m_vLog.push_back(strAdd);
+					strTemp = strTemp.substr(strTemp.find('\n')+1);
+					m_vLogTimes.push_back(vLogTimesRcv.at(nIter));
+				}
 			}
+
 			nIter++;
 		}
 
 		m_strLog = strTemp;
 
 	}
+	m_mtxLogVector.unlock();
 }
 
 void ttyControl::printLog(void) {
+	m_mtxLogVector.lock();
 	if(m_nLastLogSize < m_vLog.size())
 	{
 
@@ -88,72 +94,99 @@ void ttyControl::printLog(void) {
 		}
 		m_nLastLogSize = m_vLog.size();
 	}
+	m_mtxLogVector.unlock();
 }
 
 size_t ttyControl::getCurrentLogSize(void)
 {
-	return m_vLog.size();
+	m_mtxLogVector.lock();
+	size_t ret = m_vLog.size();
+	m_mtxLogVector.unlock();
+	return ret;
 }
 
 std::string ttyControl::getLogLineTime(size_t nLine)
 {
+	m_mtxLogVector.lock();
 	if(nLine < m_vLogTimes.size())
 	{
-		return m_vLogTimes.at(nLine);
+		std::string ret = m_vLogTimes.at(nLine);
+		m_mtxLogVector.unlock();
+		return ret;
 	}
-
+	m_mtxLogVector.unlock();
 	return "";
 }
 
 std::string ttyControl::getLogLine(size_t nLine) {
+	m_mtxLogVector.lock();
 	if(nLine < m_vLog.size())
 	{
-		return m_vLog.at(nLine);
+		std::string ret = m_vLog.at(nLine);
+		m_mtxLogVector.unlock();
+		return ret;
 	}
+	m_mtxLogVector.unlock();
 
 	return "";
 }
 
 std::vector<std::string> ttyControl::getLogTimeList(size_t nFrom, size_t nTo)
 {
+	m_mtxLogVector.lock();
 	if(nFrom < m_vLogTimes.size() && nTo < m_vLogTimes.size() && nFrom <= nTo)
 	{
-		return std::vector<std::string>(m_vLogTimes.begin()+nFrom, m_vLogTimes.begin()+nTo);
+		std::vector<std::string> ret(m_vLogTimes.begin()+nFrom, m_vLogTimes.begin()+nTo);
+		m_mtxLogVector.unlock();
+		return ret;
 	}
-
+	m_mtxLogVector.unlock();
 	return std::vector<std::string>();
 }
 
 std::vector<std::string> ttyControl::getLogTimeList(size_t nFrom)
 {
+	m_mtxLogVector.lock();
 	if(nFrom < m_vLogTimes.size())
 	{
-		return std::vector<std::string>(m_vLogTimes.begin()+nFrom, m_vLogTimes.end());
+		std::vector<std::string> ret(m_vLogTimes.begin()+nFrom, m_vLogTimes.end());
+		m_mtxLogVector.unlock();
+		return ret;
 	}
+	m_mtxLogVector.unlock();
 
 	return std::vector<std::string>();
 }
 
 std::vector<std::string> ttyControl::getLogList(size_t nFrom, size_t nTo) {
+	m_mtxLogVector.lock();
 	if(nFrom < m_vLog.size() && nTo < m_vLog.size() && nFrom <= nTo)
 	{
-		return std::vector<std::string>(m_vLog.begin()+nFrom, m_vLog.begin()+nTo);
+		std::vector<std::string> ret(m_vLog.begin()+nFrom, m_vLog.begin()+nTo);
+		m_mtxLogVector.unlock();
+		return ret;
 	}
-
+	m_mtxLogVector.unlock();
 	return std::vector<std::string>();
 }
 
 std::vector<std::string> ttyControl::getLogList(size_t nFrom) {
+	m_mtxLogVector.lock();
 	if(nFrom < m_vLog.size())
 	{
-		return std::vector<std::string>(m_vLog.begin()+nFrom, m_vLog.end());
+		std::vector<std::string> ret(m_vLog.begin()+nFrom, m_vLog.end());
+		m_mtxLogVector.unlock();
+		return ret;
 	}
-
+	m_mtxLogVector.unlock();
 	return std::vector<std::string>();
 }
 
 std::vector<std::string> ttyControl::getLogList(void) {
-	return std::vector<std::string>(m_vLog.begin(), m_vLog.end());
+	m_mtxLogVector.lock();
+	std::vector<std::string> ret(m_vLog.begin(), m_vLog.end());
+	m_mtxLogVector.unlock();
+	return ret;
 }
 
 void ttyControl::sendToDevice(std::string strSend) {
