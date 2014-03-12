@@ -15,6 +15,7 @@
 #include <boost/regex.hpp>
 #include "../ttyConnector/ttyControl.hpp"
 #include "ToolBox.hpp"
+ #include <mutex>
 
 class pageHandler {
 public:
@@ -35,6 +36,8 @@ private:
 
 	size_t* m_pnCurLogPos;
 	std::string m_strTTYs;
+
+	std::mutex m_mtxCreateXML;
 };
 
 

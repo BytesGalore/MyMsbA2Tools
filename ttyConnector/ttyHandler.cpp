@@ -205,7 +205,7 @@ std::string ttyHandler::getTime()
 	  {
 		  strRet = strRet.substr(0, found) + ".";
 		  std::stringstream ss;
-		  ss << std::setfill('0') << std::setw(3) << fractional_seconds << " ";
+		  ss << std::setfill('0') << std::setw(3) << fractional_seconds;
 		  strRet += ss.str();
 	  }
 	  return strRet;

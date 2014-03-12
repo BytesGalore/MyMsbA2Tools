@@ -39,9 +39,7 @@ struct msba2_server {
 		if(!strRes.empty())
 		{
 
-			response = server::response::stock_reply(
-									server::response::ok, strRes);
-
+			response = server::response::stock_reply(server::response::ok, strRes);
     	    response.headers[1].value = strReqVal;
     	}
 

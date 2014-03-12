@@ -60,15 +60,13 @@ void ttyControl::readLog(void) {
 		for(std::vector<std::string>::iterator it = vLogRcv.begin(); it != vLogRcv.end(); ++it)
 		{
 			strTemp += (*it);
-			if(strTemp.find('\n') != std::string::npos)
+
+			while( (strTemp.find('\n') != std::string::npos ) )
 			{
-				while( (strTemp.find('\n') != std::string::npos ) )
-				{
-					std::string strAdd = strTemp.substr(0, strTemp.find('\n')+1);
-					m_vLog.push_back(strAdd);
-					strTemp = strTemp.substr(strTemp.find('\n')+1);
-					m_vLogTimes.push_back(vLogTimesRcv.at(nIter));
-				}
+				std::string strAdd = strTemp.substr(0, strTemp.find('\n')+1);
+				m_vLog.push_back(strAdd);
+				strTemp = strTemp.substr(strTemp.find('\n')+1);
+				m_vLogTimes.push_back(vLogTimesRcv.at(nIter));
 			}
 
 			nIter++;

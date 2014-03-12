@@ -98,12 +98,15 @@ void pageHandler::collectTTYPorts( void )
 
 std::string pageHandler::createLogXML( void )
 {
+	m_mtxCreateXML.lock();
+	std::string strRetXML = "";
 	if(m_vpTTYcontrol.empty())
 	{
-		return "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" + m_strTTYs;
+		strRetXML = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" + m_strTTYs;
+		m_mtxCreateXML.unlock();
+		return strRetXML;
 	}
 
-	std::string strRetXML = "";
 	strRetXML = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n";
 	strRetXML += "<GENERATED>\n";
 	std::string strNodeStates = "";
@@ -118,18 +121,17 @@ std::string pageHandler::createLogXML( void )
 		std::vector<std::string> vLog = m_vpTTYcontrol.at(i)->getLogList(nLine);
 		if(!vLog.empty())
 		{
-		std::vector<std::string> vTime = m_vpTTYcontrol.at(i)->getLogTimeList(nLine);
-		for( size_t j = 0; j < vLog.size(); j++)
-		{
-			std::pair<std::string, std::pair<std::string, std::string>> pr(vTime.at(j), std::pair<std::string, std::string>(strPort, vLog.at(j)) );
-			vPairsOfLines.push_back( pr );
-		}
+			std::vector<std::string> vTime = m_vpTTYcontrol.at(i)->getLogTimeList(nLine);
+			for( size_t j = 0; j < vLog.size(); j++)
+			{
+				std::pair<std::string, std::pair<std::string, std::string>> pr(vTime.at(j), std::pair<std::string, std::string>(strPort, vLog.at(j)) );
+				vPairsOfLines.push_back( pr );
+			}
 		}
 		m_vTTYLogPos.at(i) += vLog.size();
 	}
 	if(!vPairsOfLines.empty())
 	{
-
 		std::sort(vPairsOfLines.begin(), vPairsOfLines.end());
 		for( size_t i = 0; i < vPairsOfLines.size(); i++)
 		{
@@ -141,12 +143,11 @@ std::string pageHandler::createLogXML( void )
 			strRetXML += "\t</LOGLINE>\n";
 		}
 	}
-	//std::cout << strRetXML;
 
 	strRetXML += strNodeStates;
 	strRetXML += m_strTTYs;
 	strRetXML += "</GENERATED>\n";
-	//std::cout << strRetXML << std::endl;
+	m_mtxCreateXML.unlock();
 	return strRetXML;
 
 }
@@ -154,7 +155,6 @@ std::string pageHandler::createLogXML( void )
 std::string pageHandler::handle(std::string strRequest, std::string strReqVal) {
 
 	std::string strPort = "";
-
     // workaround for whitespaces in HTML form 
 	boost::regex re("%20");
 	strRequest = boost::regex_replace(strRequest, re, " ");
