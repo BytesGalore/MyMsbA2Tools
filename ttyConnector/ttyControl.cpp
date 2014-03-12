@@ -6,7 +6,6 @@
  */
 #include <iostream>
 #include "ttyControl.hpp"
-#include <boost/regex.hpp>
 
 long ttyControl::initialize(std::string strPort)
 {
