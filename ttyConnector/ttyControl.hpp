@@ -123,6 +123,8 @@ private:
 	std::vector<std::string> m_vLog;
 	/*! The corresponding incoming timestamps (host-time) for each log line */
 	std::vector<std::string> m_vLogTimes;
+	/*! Commands sent to this tty */
+	std::vector<std::string> m_vCommands;
 	/*! Temporary string for current unfinished line, i.e. the last line without \n */
 	std::string m_strLog;
 	/*! The number of lines received from the ttyHandler */

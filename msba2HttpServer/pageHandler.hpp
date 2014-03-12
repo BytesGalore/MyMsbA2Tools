@@ -32,9 +32,12 @@ private:
 	toolbox m_tb;
 
 	std::vector<boost::shared_ptr<ttyControl>> m_vpTTYcontrol;
+
+	void resetTTYLogPos(void);
 	std::vector<size_t> m_vTTYLogPos;
 
 	size_t* m_pnCurLogPos;
+	std::vector<std::string> m_vStrTTY;
 	std::string m_strTTYs;
 
 	std::mutex m_mtxCreateXML;

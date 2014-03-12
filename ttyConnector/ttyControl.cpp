@@ -188,6 +188,7 @@ std::vector<std::string> ttyControl::getLogList(void) {
 }
 
 void ttyControl::sendToDevice(std::string strSend) {
+	m_vCommands.push_back(strSend);
 	m_ttyh.writeToTTY(strSend);
 }
 

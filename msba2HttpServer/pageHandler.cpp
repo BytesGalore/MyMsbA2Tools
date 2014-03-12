@@ -42,6 +42,15 @@ boost::shared_ptr<ttyControl>* pageHandler::getTTYcontrol( std::string& r_strPor
 	return NULL;
 }
 
+void pageHandler::resetTTYLogPos( void )
+{
+	for( std::vector<size_t>::iterator it = m_vTTYLogPos.begin();
+					it != m_vTTYLogPos.end(); ++it)
+	{
+		(*it) = 0;
+	}
+}
+
 void pageHandler::readAllLogs( void )
 {
 	for( std::vector<boost::shared_ptr<ttyControl>>::iterator it = m_vpTTYcontrol.begin();
@@ -77,12 +86,15 @@ void pageHandler::collectTTYPorts( void )
 	boost::filesystem::path pthSeek("/dev");
 	std::string strRet = "";
 	std::string strPorts = "";
+	m_vStrTTY.clear();
+
 	if ( boost::filesystem::exists(pthSeek) && boost::filesystem::is_directory(pthSeek))
 	{
 	  for( boost::filesystem::directory_iterator dir_iter(pthSeek) ; dir_iter != end_iter ; ++dir_iter)
 	  {
 		  if(dir_iter->path().string().find("/ttyUSB") != std::string::npos )
 		  {
+		  	  m_vStrTTY.push_back(dir_iter->path().string());
 			  strPorts += "\t<TTY>" + dir_iter->path().string() + "\t</TTY>\n";
 		  }
 	  }
@@ -149,7 +161,6 @@ std::string pageHandler::createLogXML( void )
 	strRetXML += "</GENERATED>\n";
 	m_mtxCreateXML.unlock();
 	return strRetXML;
-
 }
 
 std::string pageHandler::handle(std::string strRequest, std::string strReqVal) {
@@ -178,6 +189,19 @@ std::string pageHandler::handle(std::string strRequest, std::string strReqVal) {
 		return "";
 	}
 
+
+	if( (strRequest.find("/?ConnectAllTTY") != std::string::npos) )
+	{
+		for (size_t i = 0; i < m_vStrTTY.size(); ++i)
+		{
+			if(getTTYcontrol( m_vStrTTY.at(i) ) == NULL)
+			{	
+				openTTY(m_vStrTTY.at(i));
+			}
+		}
+		return "";
+	}
+
 	if( (strRequest.find("/?ConnectTTY=") != std::string::npos) )
 	{
 		std::string strPort = strRequest.substr( strRequest.find('=')+1);
@@ -189,6 +213,13 @@ std::string pageHandler::handle(std::string strRequest, std::string strReqVal) {
 
 		return "";
 	}
+
+	if( (strRequest.find("/?ResetTTYlogs") != std::string::npos) )
+	{
+		resetTTYLogPos();
+		return "";
+	}
+
 
 	if( strRequest.find("append_log.xml") != std::string::npos )
 	{
