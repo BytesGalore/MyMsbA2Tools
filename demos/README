@@ -7,3 +7,6 @@ This simple demo demonstrates the communication with MSBA2 nodes using the msba2
 
 RPLgraph -
 This demo is based on the ndw demo and extends the view with a graph that visualize the RPL topology.
+
+MSBA2_console
+This is a console demonstrating handling of multiple connected MSB-A2 devices through tty connections.

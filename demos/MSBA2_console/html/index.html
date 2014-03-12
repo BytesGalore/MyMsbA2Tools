@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>MSBA2 Demo</title>
+    <!-- Bootstrap core CSS -->
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.css" rel="stylesheet">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/html5shiv.js"></script>
+      <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+    <div id="IDConsole" style="padding-left:5em; padding-right:5em; padding-top:1em">
+        <div class="btn-group">
+            <button type="button" class="btn btn-default btn-xs dropdown-toggle" style="text-align: center;" data-toggle="dropdown">Connect to Device <span class="caret"></span>
+            </button>
+            <button type="button" class="btn btn-default btn-xs" onclick="requestTTY('?RefreshTTYPorts')">refresh</button>
+            <button type="button" class="btn btn-default btn-xs" onclick="openAllTTY()">connect all</button>
+            <ul class="dropdown-menu" role="menu" id="IDttySelection"></ul>
+            <input type="checkbox" name="ToggleAutoscroll" value="on" checked="checked" style="margin-left: 2em;" id="IDautoscrollToggle" onclick="toggleAutoscroll()">Autoscroll</input>
+            <input type="checkbox" name="ToggleTimestamp" value="on" checked="checked" style="margin-left: 1em;" id="IDtimestampToggle" onclick="toggleTimestamp()">Timestamps</input>
+        </div>
+        <button type="button" class="btn btn-default btn-xs" style="margin-left: 2em;" onclick="reloadLog()">reload log</button>
+        <button type="button" class="btn btn-default btn-xs" onclick="dumpLog()">dump log</button>
+        <div id="IDmainView">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">MSB-A2 Mixed console</h3>
+                </div>
+                <div id="IDconsoleOut" class="panel-body" style="height: 800px; overflow: auto; font-family:monospace;"></div>
+                <div class="panel-footer">
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="" id="IDcommandForm" onkeydown="if (event.keyCode == 13) sendCommand()"> <span class="input-group-btn">
+                    <div class="btn-group dropup">
+                      <button style="background-color:black" activenode="none" id="IDnodeSendChoice" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown"><span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu pull-right" role="menu" id="IDsendToNode"></ul>
+                    </div><!-- /btn-group -->
+                    </span>
+                </div><!-- /input-group -->
+                <div id="IDchooseView"></div>
+            </div><!-- panel footer -->
+        </div><!-- panel primary -->
+    </div><!-- /.IDmainView -->
+    </div><!-- /.IDConsole -->
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script>
+    var xmlhttp = null;
+    // refresh every 700ms
+    var ntimeDelay = 700;
+    var refreshOutput = setInterval(function () {
+        requestUpdateXML()
+    }, ntimeDelay);
+    var colors = new Array("LightGray", "LightSeaGreen", "Orange", "GreenYellow", "LightSalmon", "Peru", "PowderBlue", "RosyBrown");
+
+    function setReloadTimer(val) {
+        if (val > 0) {
+            ntimeDelay = val;
+            refreshOutput = setInterval(function () {
+                requestUpdateXML()
+            }, ntimeDelay);
+        } else {
+            clearInterval(refreshOutput);
+        }
+    }
+
+    function toggleAutoscroll() {
+        var toggle = document.getElementById("IDautoscrollToggle");
+        toggle.setAttribute("value", (toggle.getAttribute("value") == "on" ? "off" : "on"));
+    }
+
+    function toggleTimestamp() {
+        var toggle = document.getElementById("IDtimestampToggle");
+        toggle.setAttribute("value", (toggle.getAttribute("value") == "on" ? "off" : "on"));
+    }
+
+    function toggleView(port) {
+        var toggle = document.getElementById("IDviewNode" + port);
+        toggle.setAttribute("value", (toggle.getAttribute("value") == "on" ? "off" : "on"));
+        if (toggle.getAttribute("value") == "on") {
+            toggle.style.opacity = "1.0";
+            toggle.style.color = "black";
+        } else {
+            toggle.style.opacity = "0.5";
+            toggle.style.color = "white";
+        }
+    }
+
+    function getColorForNode(port) {
+        var mysearch = /\/dev\/ttyUSB(\d*)(.*)/;
+        var result = mysearch.exec(port);
+        var index = 0;
+        index = result[1];
+        if (index < colors.length) {
+            return colors[index];
+        }
+        return "Teal";
+    }
+
+    function createLineTag(logline) {
+        var txt, j, colortag, timestamp;
+        var childs = logline.childNodes;
+        timestamp = "";
+        colortag = "";
+        txt = "";
+        var port = "";
+        for (j = 0; j < childs.length; j++) {
+            if (childs[j].nodeName.toUpperCase() == "TIMESTAMP" && document.getElementById("IDtimestampToggle").getAttribute("value") == "on") {
+                timestamp = "[" + childs[j].textContent + "] ";
+            }
+            if (childs[j].nodeName.toUpperCase() == "DEVICE") {
+                port = childs[j].textContent;
+                colortag = "<div style=\"background-color:" + getColorForNode(childs[j].textContent) + "\">";
+            }
+            if (childs[j].nodeName.toUpperCase() == "VALUE") {
+                txt = txt + childs[j].textContent + "<br>";
+            }
+        }
+        txt = colortag + timestamp + txt + "</div>";
+        if (document.getElementById("IDviewNode" + port) != null && document.getElementById("IDviewNode" + port).getAttribute("value") == "off") {
+            return "";
+        }
+        return txt;
+    }
+
+    function changeSend(changePort) {
+        document.getElementById("IDnodeSendChoice").setAttribute("style", "background-color:" + getColorForNode(changePort));
+        document.getElementById("IDnodeSendChoice").setAttribute("activenode", changePort);
+    }
+
+    function handleConnectionButtons(node) {
+        var j, k;
+        var txt = "";
+        for (j = 0; j < node.length; j++) {
+            var childs = node[j].childNodes;
+            var name = "";
+            var status = "";
+            for (k = 0; k < childs.length; k++) {
+                if (childs[k].nodeName.toUpperCase() == "PORT") {
+                    name = childs[k].textContent;
+                }
+                if (childs[k].nodeName.toUpperCase() == "INITIALIZED") {
+                    status = childs[k].textContent;
+                }
+                if (status.toLowerCase() == "true") {
+                    if (document.getElementById("IDchooseNode" + name) == null) {
+                        var newListEl = document.createElement("li");
+                        newListEl.setAttribute("style", "text-align: center; background-color:" + getColorForNode(name) + ";");
+                        var newLink = document.createElement("a");
+                        newLink.setAttribute("href", "#");
+                        newLink.setAttribute("onclick", "changeSend(\'" + name + "\')");
+                        newLink.setAttribute("id", "IDchooseNode" + name);
+                        newLink.innerHTML = name;
+                        newListEl.appendChild(newLink);
+                        document.getElementById("IDsendToNode").appendChild(newListEl);
+                        var newChoice = document.createElement("span");
+                        newChoice.setAttribute("class", "label label-default");
+                        newChoice.setAttribute("style", "cursor:pointer; margin-right: 1em; text-align: center; color:black; background-color:" + getColorForNode(name) + ";");
+                        newChoice.setAttribute("value", "on");
+                        newChoice.setAttribute("id", "IDviewNode" + name);
+                        newChoice.setAttribute("onclick", "toggleView(\'" + name + "\')");
+                        newChoice.innerHTML = name;
+                        document.getElementById("IDchooseView").appendChild(newChoice);
+                    }
+                }
+            }
+        }
+    }
+
+    function handleTTYPorts(ttylist) {
+        var childs = ttylist[0].childNodes;
+        var x = document.getElementById("IDttySelection");
+        for (k = 0; k < childs.length; k++) {
+            if (childs[k].nodeName.toUpperCase() == "TTY") {
+                name = childs[k].textContent.replace(/^\s+|\s+$/g, '');
+                if (document.getElementById("IDselectedPort" + name) == null) {
+                    var newEl = document.createElement("li");
+                    newEl.setAttribute("style", "text-align: center");
+                    var newLink = document.createElement("a");
+                    newLink.setAttribute("href", "#");
+                    newLink.setAttribute("name", "NAMEselectedPort");
+                    newLink.setAttribute("onclick", "openTTY(\'" + name + "\')");
+                    newLink.setAttribute("id", "IDselectedPort" + name);
+                    newLink.innerHTML = name;
+                    newEl.appendChild(newLink);
+                    x.appendChild(newEl);
+                }
+                if (document.getElementById("IDchooseNode" + name) != null) {
+                    var n = document.getElementById("IDselectedPort" + name);
+                    if (n != null) {
+                        var p = n.parentNode;
+                        p.parentNode.removeChild(p);
+                    }
+                }
+            }
+        }
+    }
+    $(document).ready(function getxmlhttp() {
+        if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        } else { // code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+    });
+
+    function dumpLog() {
+        var consOut = document.getElementById("IDconsoleOut").cloneNode(true);
+        consOut.setAttribute("style", "overflow: auto; font-family:monospace;");
+        var w = window.open();
+        var d = w.document;
+        d.write('<!DOCTYPE html>' +
+            '<html lang="en">' + '<html><head><title>log dump</title></head>' + '<body bgcolor="White"; onLoad="self.focus()">' + consOut.outerHTML + '</body></html>');
+        d.close();
+    }
+
+    function reloadLog() {
+        // prevent interrupt from log request
+        setReloadTimer(0);
+        requestTTY("?ResetTTYlogs");
+        var consOut = document.getElementById("IDconsoleOut");
+        while (consOut.firstChild) {
+            consOut.removeChild(consOut.firstChild);
+        }
+        // enable to request log
+        setReloadTimer(ntimeDelay);
+    }
+
+    function requestUpdateXML() {
+        // prevent interrupt from log request
+        setReloadTimer(0);
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                var xmlDoc = xmlhttp.responseXML;
+                if (xmlDoc != null) {
+                    loadXMLLog(xmlDoc);
+                }
+            }
+        }
+        requestTTY("append_log.xml");
+    }
+
+    function loadXMLLog(xmlDoc) {
+        var line = xmlDoc.getElementsByTagName("LOGLINE");
+        if (line != null) {
+            var consOut = document.getElementById("IDconsoleOut");
+            var i = 0
+            var txt = "";
+            for (i = 0; i < line.length; i++) {
+                txt = txt + createLineTag(line[i]);
+            }
+            consOut.innerHTML += txt;
+            // autoscroll to bottom
+            var val = document.getElementById("IDautoscrollToggle").getAttribute("value")
+            if (val == "on") {
+                consOut.scrollTop = consOut.scrollHeight;
+            }
+            var nd = xmlDoc.getElementsByTagName("NODE");
+            if (nd != null) {
+                handleConnectionButtons(nd);
+            }
+        }
+        var atty = xmlDoc.getElementsByTagName("AVAILABLETTYS");
+        if (atty != null) {
+            handleTTYPorts(atty);
+        }
+        // enable to request log
+        setReloadTimer(ntimeDelay);
+    }
+
+    function requestTTY(request) {
+        xmlhttp.open("GET", request, true);
+        xmlhttp.send();
+    }
+
+    function sendCommand() {
+        // prevent interrupt from log request
+        setReloadTimer(0);
+        var IDcommandForm;
+        IDcommandForm = "?Command=" + document.getElementById('IDcommandForm').value + "?toNode=" + document.getElementById("IDnodeSendChoice").getAttribute("activenode");
+        requestTTY(IDcommandForm);
+        document.getElementById('IDcommandForm').value = "";
+        // enable to request log
+        setReloadTimer(ntimeDelay);
+    }
+
+    function openAllTTY() {
+        // prevent interrupt from log request
+        setReloadTimer(0);
+        requestTTY("?ConnectAllTTY");
+        // enable to request log
+        setReloadTimer(ntimeDelay);
+    }
+
+    function openTTY(port) {
+        // prevent interrupt from log request
+        setReloadTimer(0);
+        requestTTY("?ConnectTTY=" + port);
+        // enable to request log
+        setReloadTimer(ntimeDelay);
+    }
+    </script>
+</body>
+
+</html>
