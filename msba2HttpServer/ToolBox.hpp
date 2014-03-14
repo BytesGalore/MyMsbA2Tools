@@ -15,6 +15,9 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/device/array.hpp>
+#include <boost/archive/iterators/binary_from_base64.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
+#include <boost/archive/iterators/remove_whitespace.hpp>
 
 #include <fstream>
 #include <vector>
@@ -22,6 +25,7 @@
 
 class toolbox {
 public:
+    bool writeBase64ToFile( boost::filesystem::path& r_pthFile, std::string& r_strdata, size_t nOffsetData );
 	std::vector<uint8_t> readFileBinary( boost::filesystem::path& r_pthFile );
 	std::string readFileString( boost::filesystem::path& r_pthFile );
 
@@ -29,8 +33,9 @@ public:
 	std::vector<uint8_t> compressGZ( std::vector<char> & r_vIn, size_t nCompLvl );
 	std::vector<uint8_t> decompressGZ( std::vector<uint8_t> & r_vIn );
 
-
 private:
+
+
 };
 
 

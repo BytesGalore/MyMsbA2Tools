@@ -6,6 +6,22 @@
  */
 #include "ToolBox.hpp"
 
+
+bool toolbox::writeBase64ToFile( boost::filesystem::path& r_pthFile, std::string& r_strdata, size_t nOffsetData )
+{
+	typedef boost::archive::iterators::transform_width< boost::archive::iterators::binary_from_base64<boost::archive::iterators::remove_whitespace<std::string::const_iterator> >, 8, 6 > it_binary_t;
+	// Decode
+  	unsigned int paddChars = std::count(r_strdata.begin()+nOffsetData, r_strdata.end(), '=');
+  	std::replace(r_strdata.begin()+nOffsetData,r_strdata.end(),'=','A'); // replace '=' by base64 encoding of '\0'
+  	std::string result(it_binary_t(r_strdata.begin()+nOffsetData), it_binary_t(r_strdata.end())); // decode
+  	result.erase(result.end()-paddChars,result.end());  // erase padding '\0' characters
+
+	std::ofstream outfile (r_pthFile.string().c_str(),std::ofstream::binary);
+	outfile.write (result.c_str(),result.length());
+	outfile.close();
+	return true;
+}
+
 std::vector<uint8_t> toolbox::readFileBinary(
 		boost::filesystem::path& r_pthFile) {
 

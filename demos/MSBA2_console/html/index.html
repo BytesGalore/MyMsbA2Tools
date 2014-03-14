@@ -219,11 +219,29 @@
     function dumpLog() {
         var consOut = document.getElementById("IDconsoleOut").cloneNode(true);
         consOut.setAttribute("style", "overflow: auto; font-family:monospace;");
+
+
+        var dt = new Date(); 
+        var datetime =  dt.getDate() + "."
+                + (dt.getMonth()+1)  + "." 
+                + dt.getFullYear() + ", "  
+                + dt.getHours() + ":"  
+                + dt.getMinutes() + ":" 
+                + dt.getSeconds();
+
+        var filename = "logdump_" + dt.getDate() + "_"
+                + (dt.getMonth()+1)  + "_" 
+                + dt.getFullYear() + "_("  
+                + dt.getHours() + "_"  
+                + dt.getMinutes() + "_" 
+                + dt.getSeconds() +").html";
+
         var w = window.open();
         var d = w.document;
-        d.write('<!DOCTYPE html>' +
-            '<html lang="en">' + '<html><head><title>log dump</title></head>' + '<body bgcolor="White"; onLoad="self.focus()">' + consOut.outerHTML + '</body></html>');
+        var content = "<!DOCTYPE html><html lang=\"en\"><html><head><title>log dump - "+datetime+"</title></head><body bgcolor=\"White\";>"+ consOut.outerHTML + "</body></html>";
+        d.write(content);
         d.close();
+        requestTTY("/?ServerRequestSaveToFile="+filename+".html?Content="+window.btoa(content));
     }
 
     function reloadLog() {

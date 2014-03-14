@@ -214,6 +214,20 @@ std::string pageHandler::handle(std::string strRequest, std::string strReqVal) {
 		return "";
 	}
 
+	if( (strRequest.find("/?ServerRequestSaveToFile=") != std::string::npos) )
+	{
+		size_t nOffset = strRequest.find('=')+1;
+		size_t nPos = strRequest.find("?Content=", nOffset);
+		if( nPos != std::string::npos )
+		{
+			boost::filesystem::path pthDump(strRequest.substr(nOffset, (nPos-nOffset)));
+			nOffset = strRequest.find('=', nPos)+1;
+			m_tb.writeBase64ToFile( pthDump, strRequest, nOffset);
+		}
+
+		return "";
+	}
+
 	if( (strRequest.find("/?ResetTTYlogs") != std::string::npos) )
 	{
 		resetTTYLogPos();
